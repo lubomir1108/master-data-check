@@ -25,7 +25,7 @@
     --ink:#E7EAEF; --muted:#94A0B2; --line:#303744;
     --accent:#77AEDC; --accent-soft:#1B2C3D;
     --crit:#F78C7C; --crit-soft:#33201D;
-    --warn:#E9A13B; --warn-soft:#31261421;
+    --warn:#E9A13B; --warn-soft:#312614;
     --ok:#5FCB9B; --ok-soft:#162C24;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
     color-scheme:dark;
@@ -109,6 +109,14 @@ tr.u td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
 .empty{padding:26px 18px; color:var(--muted); text-align:center}
 footer{color:var(--muted); font-size:13px; border-top:1px solid var(--line); padding-top:16px}
 footer code{font-family:"IBM Plex Mono",monospace; font-size:12px}
+.langs{display:flex; gap:0; border:1px solid var(--line); border-radius:4px;
+  overflow:hidden; align-self:flex-start; background:var(--surface)}
+.langs button{font:500 12px/1 "IBM Plex Mono",monospace; letter-spacing:.06em;
+  border:0; background:transparent; color:var(--muted); padding:7px 11px; cursor:pointer;
+  border-right:1px solid var(--line)}
+.langs button:last-child{border-right:0}
+.langs button[aria-pressed="true"]{background:var(--accent); color:#fff}
+.langs button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
 .err{background:var(--crit-soft); color:var(--crit); border:1px solid var(--crit);
   border-radius:4px; padding:12px 14px; font-size:14px}
 </style>
@@ -116,22 +124,25 @@ footer code{font-family:"IBM Plex Mono",monospace; font-size:12px}
 <body>
 <div class="wrap">
 
+<div id="jazyky" class="langs" role="group" aria-label="Jazyk / Language / Sprache">
+  <button type="button" data-j="sk" aria-pressed="true">SK</button>
+  <button type="button" data-j="en" aria-pressed="false">EN</button>
+  <button type="button" data-j="de" aria-pressed="false">DE</button>
+</div>
+
 <header>
-  <p class="eyebrow">Kontrola kvality · materiálový kmeň</p>
-  <h1>Kontrola kmeňových dát</h1>
-  <p class="lede">Načíta Excel s materiálovým kmeňom alebo produktovým katalógom,
-  nájde chyby, ktoré zablokujú import do SAP, a vráti vyčistený súbor spolu
-  s protokolom nálezov.</p>
-  <div class="priv"><strong>Bez odosielania.</strong>
-  Súbor sa spracuje priamo v prehliadači — na žiadny server neodíde.</div>
+  <p class="eyebrow" id="eyebrow"></p>
+  <h1 id="h1"></h1>
+  <p class="lede" id="lede"></p>
+  <div class="priv"><strong id="privB"></strong><span id="privT"></span></div>
 </header>
 
-<div class="drop" id="drop" tabindex="0" role="button" aria-label="Vybrať súbor">
-  <p>Presuň sem súbor .xlsx</p>
-  <small>alebo</small>
+<div class="drop" id="drop" tabindex="0" role="button">
+  <p id="dropTxt"></p>
+  <small id="alebo"></small>
   <div class="row">
-    <button class="btn" id="pick" type="button">Vybrať súbor</button>
-    <button class="btn ghost" id="demo" type="button">Načítať ukážku</button>
+    <button class="btn" id="pick" type="button"></button>
+    <button class="btn ghost" id="demo" type="button"></button>
   </div>
   <input type="file" id="file" accept=".xlsx" hidden>
 </div>
@@ -140,31 +151,22 @@ footer code{font-family:"IBM Plex Mono",monospace; font-size:12px}
 
 <div id="vysledok" hidden>
   <div class="stats" id="stats"></div>
-
   <div class="row" style="justify-content:flex-start; margin-top:20px">
-    <button class="btn" id="stiahniCiste" type="button">Stiahnuť čistý import</button>
-    <button class="btn ghost" id="stiahniProtokol" type="button">Stiahnuť protokol</button>
+    <button class="btn" id="stiahniCiste" type="button"></button>
+    <button class="btn ghost" id="stiahniProtokol" type="button"></button>
   </div>
-
   <div class="panel" style="margin-top:20px">
-    <h2>Protokol nálezov <span id="pocetNalezov"></span></h2>
+    <h2 id="hProt"> <span id="pocetNalezov"></span></h2>
     <div class="scroll"><table id="tabNalezy">
-      <thead><tr>
-        <th>Závažnosť</th><th>Riadok</th><th>Kľúč</th><th>Pole</th>
-        <th>Zistenie</th><th>Pôvodná hodnota</th><th>Vykonaná akcia</th>
-      </tr></thead>
+      <thead><tr><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead>
       <tbody></tbody>
     </table></div>
   </div>
 </div>
 
 <footer>
-  <p>Kontroly: povinné polia · duplicitné kľúče · takmer zhodné názvy ·
-  dĺžka textu nad limit SAP (40 znakov) · číselník merných jednotiek a typov materiálu ·
-  kontrolná číslica EAN-13 podľa GS1 · čistá hmotnosť nad hrubú ·
-  čísla v textovom formáte · desatinná čiarka · neplatné sadzby DPH.</p>
-  <p>Rozpoznané hlavičky: <code>MATNR, MAKTX, MEINS, MTART, MATKL, EAN11, BRGEW, NTGEW, GEWEI, WERKS</code>
-  aj slovenské názvy (<code>kód, názov, EAN, MJ, cena, DPH, hmotnosť, dodávateľ, kategória</code>).</p>
+  <p id="fKontroly"></p>
+  <p id="fHlavicky"></p>
 </footer>
 
 </div>
@@ -355,20 +357,142 @@ function urobXlsx(hlavicka, riadky){
   ]);
 }
 
+/* ============================ preklady ================================ */
+const L = {
+sk:{
+ lang:"Slovenčina", eyebrow:"Kontrola kvality · materiálový kmeň",
+ h1:"Kontrola kmeňových dát",
+ lede:"Načíta Excel s materiálovým kmeňom alebo produktovým katalógom, nájde chyby, ktoré zablokujú import do SAP, a vráti vyčistený súbor spolu s protokolom nálezov.",
+ priv_b:"Bez odosielania.", priv:"Súbor sa spracuje priamo v prehliadači — na žiadny server neodíde.",
+ drop:"Presuň sem súbor .xlsx", alebo:"alebo", pick:"Vybrať súbor", demo:"Načítať ukážku",
+ s_vstup:"Riadkov na vstupe", s_ciste:"Prejde do importu", s_nalezy:"Nálezov spolu",
+ s_krit:"Kritických", s_upoz:"Upozornení",
+ dl_ciste:"Stiahnuť čistý import", dl_prot:"Stiahnuť protokol",
+ h_prot:"Protokol nálezov", bez_nalezov:"bez nálezov",
+ n_spolu:"{n} nálezov · {k} kritických",
+ th:["Závažnosť","Riadok","Kľúč","Pole","Zistenie","Pôvodná hodnota","Vykonaná akcia"],
+ KRIT:"KRITICKÁ", UPOZ:"UPOZORNENIE",
+ ok:"Žiadne nálezy — dáta sú v poriadku.",
+ chyba:"Nepodarilo sa spracovať súbor: {e}",
+ f_kontroly:"Kontroly: povinné polia · duplicitné kľúče · takmer zhodné názvy · dĺžka textu nad limit SAP (40 znakov) · číselník merných jednotiek a typov materiálu · kontrolná číslica EAN-13 podľa GS1 · čistá hmotnosť nad hrubú · čísla v textovom formáte · neplatné sadzby DPH.",
+ f_hlavicky:"Rozpoznáva SAP názvy polí aj slovenské, anglické a nemecké hlavičky.",
+ e_prazdny:"Súbor je prázdny.",
+ e_kluc:"Nenašiel som stĺpec s kľúčom materiálu. Očakávam hlavičku ako MATNR, Materiál alebo Kód.",
+ e_zip:"Súbor nie je platný .xlsx (chýba ZIP záznam).", e_harok:"V súbore nie je žiadny hárok.",
+ prazdne:"(prázdne)",
+ t_chybajuce:"Chýbajúci povinný údaj", t_nekonz_kluc:"Nekonzistentný zápis kľúča",
+ t_medzery:"Viacnásobné alebo koncové medzery", t_dlhy:"Text dlhší než limit SAP ({n} zo {max} znakov)",
+ t_ean_chyba:"Chýbajúci EAN", t_ean_nenum:"EAN obsahuje nenumerické znaky",
+ t_ean_dlzka:"Neplatná dĺžka EAN ({n} z 13)", t_ean_sucet:"Nesedí kontrolná číslica EAN-13 (GS1)",
+ t_ean_medzery:"EAN obsahoval medzery", t_mj_nekonz:"Nekonzistentná merná jednotka",
+ t_mj_nezn:"Merná jednotka nie je v číselníku", t_mtart_chyba:"Chýbajúci typ materiálu",
+ t_mtart_nezn:"Neznámy typ materiálu", t_hm_chyba:"Chýbajúca hmotnosť",
+ t_hm_format:"Hmotnosť obsahovala jednotku alebo čiarku", t_hm_zap:"Záporná hmotnosť",
+ t_ntgew:"Čistá hmotnosť je vyššia než hrubá", t_cena_chyba:"Chýbajúca alebo nečitateľná cena",
+ t_cena_format:"Cena v textovom formáte", t_cena_zap:"Záporná cena", t_cena_nula:"Nulová cena",
+ t_dph_chyba:"Chýbajúca sadzba DPH", t_dph_format:"Sadzba DPH v textovom formáte",
+ t_dph_nepl:"Neplatná sadzba DPH", t_dup:"Duplicitný kľúč", t_podobny:"Takmer zhodný názov",
+ a_von:"Riadok vynechaný z importu", a_norm:"Normalizované na {v}", a_uprav:"Upravené na „{v}“",
+ a_prazdne:"Ponechané prázdne", a_ean_dopl:"Ponechané prázdne — doplniť u dodávateľa",
+ a_overit:"Vyžaduje overenie", a_overit_dod:"Vyžaduje overenie u dodávateľa",
+ a_zjedn:"Zjednotené na {v}", a_preved:"Prevedené na {v}", a_ocist:"Očistené na {v}",
+ a_skratit:"SAP text oreže — skrátiť ručne", a_dup:"Duplicita riadku {r} — vynechané",
+ a_over_dup:"Zhoda s riadkom {r} — overiť duplicitu",
+},
+en:{
+ lang:"English", eyebrow:"Data quality check · material master",
+ h1:"Master Data Check",
+ lede:"Reads an Excel file with material master or product catalogue data, finds the errors that block a SAP import, and returns a cleaned file together with a findings log.",
+ priv_b:"Nothing is uploaded.", priv:"The file is processed in your browser — it never leaves your computer.",
+ drop:"Drop an .xlsx file here", alebo:"or", pick:"Choose file", demo:"Load sample",
+ s_vstup:"Rows in", s_ciste:"Ready to import", s_nalezy:"Findings", s_krit:"Critical", s_upoz:"Warnings",
+ dl_ciste:"Download clean import", dl_prot:"Download log",
+ h_prot:"Findings log", bez_nalezov:"no findings", n_spolu:"{n} findings · {k} critical",
+ th:["Severity","Row","Key","Field","Finding","Original value","Action taken"],
+ KRIT:"CRITICAL", UPOZ:"WARNING",
+ ok:"No findings — the data is clean.",
+ chyba:"Could not process the file: {e}",
+ f_kontroly:"Checks: mandatory fields · duplicate keys · near-identical descriptions · text longer than the SAP limit (40 characters) · unit of measure and material type code lists · EAN-13 check digit per GS1 · net weight above gross · numbers stored as text · invalid VAT rates.",
+ f_hlavicky:"Recognises SAP field names as well as English, German and Slovak column headers.",
+ e_prazdny:"The file is empty.",
+ e_kluc:"No material key column found. Expected a header such as MATNR, Material or Material Number.",
+ e_zip:"Not a valid .xlsx file (no ZIP record).", e_harok:"The file contains no worksheet.",
+ prazdne:"(empty)",
+ t_chybajuce:"Mandatory field missing", t_nekonz_kluc:"Inconsistent key formatting",
+ t_medzery:"Multiple or trailing spaces", t_dlhy:"Text exceeds SAP limit ({n} of {max} characters)",
+ t_ean_chyba:"EAN missing", t_ean_nenum:"EAN contains non-numeric characters",
+ t_ean_dlzka:"Invalid EAN length ({n} of 13)", t_ean_sucet:"EAN-13 check digit does not match (GS1)",
+ t_ean_medzery:"EAN contained spaces", t_mj_nekonz:"Inconsistent unit of measure",
+ t_mj_nezn:"Unit of measure not in code list", t_mtart_chyba:"Material type missing",
+ t_mtart_nezn:"Unknown material type", t_hm_chyba:"Weight missing",
+ t_hm_format:"Weight contained a unit or a comma", t_hm_zap:"Negative weight",
+ t_ntgew:"Net weight is higher than gross weight", t_cena_chyba:"Price missing or unreadable",
+ t_cena_format:"Price stored as text", t_cena_zap:"Negative price", t_cena_nula:"Zero price",
+ t_dph_chyba:"VAT rate missing", t_dph_format:"VAT rate stored as text",
+ t_dph_nepl:"Invalid VAT rate", t_dup:"Duplicate key", t_podobny:"Near-identical description",
+ a_von:"Row excluded from import", a_norm:"Normalised to {v}", a_uprav:"Changed to “{v}”",
+ a_prazdne:"Left empty", a_ean_dopl:"Left empty — request from supplier",
+ a_overit:"Needs verification", a_overit_dod:"Needs verification with the supplier",
+ a_zjedn:"Standardised to {v}", a_preved:"Converted to {v}", a_ocist:"Cleaned to {v}",
+ a_skratit:"SAP will truncate — shorten manually", a_dup:"Duplicate of row {r} — excluded",
+ a_over_dup:"Matches row {r} — check for duplicate",
+},
+de:{
+ lang:"Deutsch", eyebrow:"Datenqualitätsprüfung · Materialstamm",
+ h1:"Stammdatenprüfung",
+ lede:"Liest eine Excel-Datei mit Materialstamm- oder Katalogdaten, findet die Fehler, die einen SAP-Import blockieren, und liefert eine bereinigte Datei samt Prüfprotokoll zurück.",
+ priv_b:"Kein Upload.", priv:"Die Datei wird direkt im Browser verarbeitet — sie verlässt Ihren Rechner nicht.",
+ drop:".xlsx-Datei hierher ziehen", alebo:"oder", pick:"Datei wählen", demo:"Beispiel laden",
+ s_vstup:"Zeilen gesamt", s_ciste:"Importfähig", s_nalezy:"Befunde", s_krit:"Kritisch", s_upoz:"Hinweise",
+ dl_ciste:"Bereinigte Datei laden", dl_prot:"Protokoll laden",
+ h_prot:"Prüfprotokoll", bez_nalezov:"keine Befunde", n_spolu:"{n} Befunde · {k} kritisch",
+ th:["Schwere","Zeile","Schlüssel","Feld","Befund","Ursprungswert","Maßnahme"],
+ KRIT:"KRITISCH", UPOZ:"HINWEIS",
+ ok:"Keine Befunde — die Daten sind in Ordnung.",
+ chyba:"Datei konnte nicht verarbeitet werden: {e}",
+ f_kontroly:"Prüfungen: Pflichtfelder · doppelte Schlüssel · nahezu gleiche Bezeichnungen · Text über SAP-Grenze (40 Zeichen) · Mengeneinheiten- und Materialartenschlüssel · EAN-13-Prüfziffer nach GS1 · Nettogewicht über Bruttogewicht · Zahlen als Text · ungültige Steuersätze.",
+ f_hlavicky:"Erkennt SAP-Feldnamen sowie deutsche, englische und slowakische Spaltenüberschriften.",
+ e_prazdny:"Die Datei ist leer.",
+ e_kluc:"Keine Spalte mit dem Materialschlüssel gefunden. Erwartet wird z. B. MATNR, Material oder Materialnummer.",
+ e_zip:"Keine gültige .xlsx-Datei (kein ZIP-Eintrag).", e_harok:"Die Datei enthält kein Tabellenblatt.",
+ prazdne:"(leer)",
+ t_chybajuce:"Pflichtfeld fehlt", t_nekonz_kluc:"Uneinheitliche Schlüsselschreibweise",
+ t_medzery:"Mehrfache oder abschließende Leerzeichen", t_dlhy:"Text über SAP-Grenze ({n} von {max} Zeichen)",
+ t_ean_chyba:"EAN fehlt", t_ean_nenum:"EAN enthält nicht-numerische Zeichen",
+ t_ean_dlzka:"Ungültige EAN-Länge ({n} von 13)", t_ean_sucet:"EAN-13-Prüfziffer stimmt nicht (GS1)",
+ t_ean_medzery:"EAN enthielt Leerzeichen", t_mj_nekonz:"Uneinheitliche Mengeneinheit",
+ t_mj_nezn:"Mengeneinheit nicht im Schlüsselverzeichnis", t_mtart_chyba:"Materialart fehlt",
+ t_mtart_nezn:"Unbekannte Materialart", t_hm_chyba:"Gewicht fehlt",
+ t_hm_format:"Gewicht enthielt Einheit oder Komma", t_hm_zap:"Negatives Gewicht",
+ t_ntgew:"Nettogewicht höher als Bruttogewicht", t_cena_chyba:"Preis fehlt oder unlesbar",
+ t_cena_format:"Preis als Text gespeichert", t_cena_zap:"Negativer Preis", t_cena_nula:"Preis null",
+ t_dph_chyba:"Steuersatz fehlt", t_dph_format:"Steuersatz als Text gespeichert",
+ t_dph_nepl:"Ungültiger Steuersatz", t_dup:"Doppelter Schlüssel", t_podobny:"Nahezu gleiche Bezeichnung",
+ a_von:"Zeile vom Import ausgeschlossen", a_norm:"Normalisiert auf {v}", a_uprav:"Geändert in „{v}“",
+ a_prazdne:"Leer belassen", a_ean_dopl:"Leer belassen — beim Lieferanten anfordern",
+ a_overit:"Prüfung erforderlich", a_overit_dod:"Prüfung beim Lieferanten erforderlich",
+ a_zjedn:"Vereinheitlicht auf {v}", a_preved:"Umgewandelt in {v}", a_ocist:"Bereinigt auf {v}",
+ a_skratit:"SAP kürzt den Text — manuell kürzen", a_dup:"Duplikat von Zeile {r} — ausgeschlossen",
+ a_over_dup:"Stimmt mit Zeile {r} überein — auf Duplikat prüfen",
+}};
+
+let jazyk = "sk";
+function t(k, p){
+  const s = (L[jazyk] && L[jazyk][k] !== undefined) ? L[jazyk][k] : (L.sk[k] ?? k);
+  return (p && typeof s === "string") ? s.replace(/\{(\w+)\}/g, (_, x) => p[x]) : s;
+}
+
 /* ========================== číselníky a kontroly ====================== */
 const MJ_MAP = { ks:"ST", "ks.":"ST", kus:"ST", kusy:"ST", pcs:"ST", pc:"ST", st:"ST", ea:"ST",
-  bal:"KAR", balenie:"KAR", kar:"KAR", kartón:"KAR", karton:"KAR",
+  stk:"ST", "stück":"ST", stueck:"ST",
+  bal:"KAR", balenie:"KAR", kar:"KAR", "kartón":"KAR", karton:"KAR",
   sada:"SET", set:"SET", m:"M", meter:"M", bm:"M", mm:"MM", cm:"CM",
-  kg:"KG", g:"G", t:"TO", l:"L", ml:"ML", m2:"M2", m3:"M3", vrece:"VRE" };
+  kg:"KG", g:"G", t:"TO", to:"TO", l:"L", ml:"ML", m2:"M2", m3:"M3", vrece:"VRE" };
 const MJ_PLATNE = new Set(["ST","KAR","SET","M","MM","CM","KG","G","TO","L","ML","M2","M3","VRE"]);
 const MTART_PLATNE = new Set(["ROH","HALB","FERT","HAWA","DIEN","VERP","HIBE","NLAG","UNBW","ERSA"]);
 const DPH_PLATNE = new Set([0,10,20,23]);
-const MAKTX_MAX = 40;          // limit dĺžky krátkeho textu v SAP (MAKTX)
+const MAKTX_MAX = 40;
 
-/* rozpoznanie hlavičiek — SAP názvy aj bežné slovenské */
-/* SAP technické názvy polí (MATNR, MAKTX…) sú rovnaké vo všetkých jazykoch —
-   exporty s nimi fungujú všade. Popisné hlavičky sa líšia, tak sú tu
-   slovenské, české, anglické aj nemecké varianty. */
 const POLIA = {
   kluc:    ["matnr","material","materiál","materialnummer","materialnr","matnr.",
             "číslo materiálu","cislo materialu","material number","material no",
@@ -393,19 +517,20 @@ const POLIA = {
   dodavatel:["lifnr","dodávateľ","dodavatel","supplier","vendor","kód dodávateľa","kod dodavatela",
             "lieferant","lieferantennummer","vendor number"],
 };
+const PORADIE = ["kluc","nazov","mtart","mj","matkl","ean","brgew","ntgew","gewei","werks","cena","dph","dodavatel"];
+
 function mapujHlavicku(h){
-  const map = {}; const pouzite = new Set();
+  const map = {}, pouzite = new Set();
   h.forEach((n, i) => {
-    const t = String(n ?? "").trim().toLowerCase();
-    if (!t) return;
-    for (const [pole, varianty] of Object.entries(POLIA)){
+    const x = String(n ?? "").trim().toLowerCase();
+    if (!x) return;
+    for (const [pole, v] of Object.entries(POLIA)){
       if (pouzite.has(pole)) continue;
-      if (varianty.includes(t)){ map[pole] = i; pouzite.add(pole); return; }
+      if (v.includes(x)){ map[pole] = i; pouzite.add(pole); return; }
     }
   });
   return map;
 }
-
 function ean13ok(e){
   if (!/^\d{13}$/.test(e)) return false;
   let s = 0; for (let i = 0; i < 12; i++) s += (+e[i]) * (i % 2 === 0 ? 1 : 3);
@@ -414,130 +539,120 @@ function ean13ok(e){
 function naCislo(v){
   if (v === null || v === undefined || (typeof v === "string" && !v.trim())) return [null, true];
   if (typeof v === "number") return [v, false];
-  let t = String(v).trim().replace(/[^\d,.\-]/g, "").replace(/,/g, ".");
-  t = t.replace(/\.(?=.*\.)/g, "");
-  const n = Number(t);
+  let x = String(v).trim().replace(/[^\d,.\-]/g, "").replace(/,/g, ".").replace(/\.(?=.*\.)/g, "");
+  const n = Number(x);
   return isNaN(n) ? [null, true] : [n, true];
 }
 const klucNazvu = s => String(s).toLowerCase().normalize("NFD")
   .replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "");
 
-const KRIT = "KRITICKÁ", UPOZ = "UPOZORNENIE";
+const KRIT = "K", UPOZ = "U";
 
 function skontroluj(riadky){
-  if (!riadky.length) throw new Error("Súbor je prázdny.");
+  if (!riadky.length) throw new Error(t("e_prazdny"));
   const hlavicka = riadky[0].map(x => x ?? "");
   const m = mapujHlavicku(hlavicka);
-  if (m.kluc === undefined)
-    throw new Error("Nenašiel som stĺpec s kľúčom materiálu. Očakávam hlavičku ako MATNR, Materiál alebo Kód.");
+  if (m.kluc === undefined) throw new Error(t("e_kluc"));
 
   const N = [], ciste = [], videneKluce = new Map(), videneNazvy = new Map();
   const cit = (r, p) => m[p] === undefined ? null : (r[m[p]] ?? null);
-  const nalez = (r, k, pole, zav, typ, pov, akcia) =>
-    N.push({ riadok:r, kluc:k, pole, zav, typ, pov, akcia });
+  const hl = p => m[p] === undefined ? p : String(hlavicka[m[p]]);
+  const nalez = (r, k, pole, zav, tk, tp, pov, ak, ap) =>
+    N.push({ riadok:r, kluc:k, pole, zav, tk, tp, pov, ak, ap });
+  const PRAZDNE = "\u0000prazdne";
 
   for (let i = 1; i < riadky.length; i++){
-    const r = riadky[i], cislo = i + 1;
+    const r = riadky[i], c = i + 1;
     if (!r || !r.some(x => x !== null && x !== undefined && x !== "")) continue;
     let blok = false;
 
-    /* kľúč */
     const kRaw = cit(r,"kluc") === null ? "" : String(cit(r,"kluc"));
     const k = kRaw.trim().toUpperCase();
-    if (!k){ nalez(cislo,"",hl("kluc"),KRIT,"Chýbajúci povinný údaj","(prázdne)","Riadok vynechaný z importu"); blok = true; }
-    else if (k !== kRaw) nalez(cislo,k,hl("kluc"),UPOZ,"Nekonzistentný zápis kľúča",JSON.stringify(kRaw),`Normalizované na ${k}`);
+    if (!k){ nalez(c,"",hl("kluc"),KRIT,"t_chybajuce",null,PRAZDNE,"a_von",null); blok = true; }
+    else if (k !== kRaw) nalez(c,k,hl("kluc"),UPOZ,"t_nekonz_kluc",null,JSON.stringify(kRaw),"a_norm",{v:k});
 
-    /* názov */
     const nRaw = cit(r,"nazov") === null ? "" : String(cit(r,"nazov"));
     const n = nRaw.replace(/\s+/g," ").trim();
     if (m.nazov !== undefined){
-      if (!n){ nalez(cislo,k,hl("nazov"),KRIT,"Chýbajúci povinný údaj","(prázdne)","Riadok vynechaný z importu"); blok = true; }
+      if (!n){ nalez(c,k,hl("nazov"),KRIT,"t_chybajuce",null,PRAZDNE,"a_von",null); blok = true; }
       else {
-        if (n !== nRaw) nalez(cislo,k,hl("nazov"),UPOZ,"Viacnásobné alebo koncové medzery",JSON.stringify(nRaw),`Upravené na „${n}“`);
+        if (n !== nRaw) nalez(c,k,hl("nazov"),UPOZ,"t_medzery",null,JSON.stringify(nRaw),"a_uprav",{v:n});
         if (n.length > MAKTX_MAX)
-          nalez(cislo,k,hl("nazov"),KRIT,`Text dlhší než limit SAP (${n.length} z ${MAKTX_MAX} znakov)`,n,"SAP text oreže — skrátiť ručne");
+          nalez(c,k,hl("nazov"),KRIT,"t_dlhy",{n:n.length,max:MAKTX_MAX},n,"a_skratit",null);
       }
     }
 
-    /* merná jednotka */
     let mj = null;
     if (m.mj !== undefined){
       const raw = cit(r,"mj") === null ? "" : String(cit(r,"mj")).trim();
       mj = MJ_MAP[raw.toLowerCase()] ?? raw.toUpperCase();
-      if (!raw){ nalez(cislo,k,hl("mj"),KRIT,"Chýbajúci povinný údaj","(prázdne)","Riadok vynechaný z importu"); blok = true; }
-      else if (mj !== raw.toUpperCase()) nalez(cislo,k,hl("mj"),UPOZ,"Nekonzistentná merná jednotka",raw,`Zjednotené na ${mj}`);
-      else if (!MJ_PLATNE.has(mj)) nalez(cislo,k,hl("mj"),KRIT,"Merná jednotka nie je v číselníku",mj,"Riadok vynechaný z importu"), blok = true;
+      if (!raw){ nalez(c,k,hl("mj"),KRIT,"t_chybajuce",null,PRAZDNE,"a_von",null); blok = true; }
+      else if (mj !== raw.toUpperCase()) nalez(c,k,hl("mj"),UPOZ,"t_mj_nekonz",null,raw,"a_zjedn",{v:mj});
+      else if (!MJ_PLATNE.has(mj)){ nalez(c,k,hl("mj"),KRIT,"t_mj_nezn",null,mj,"a_von",null); blok = true; }
     }
 
-    /* typ materiálu */
     let mtart = null;
     if (m.mtart !== undefined){
       const raw = cit(r,"mtart") === null ? "" : String(cit(r,"mtart")).trim().toUpperCase();
       mtart = raw;
-      if (!raw){ nalez(cislo,k,hl("mtart"),KRIT,"Chýbajúci typ materiálu","(prázdne)","Riadok vynechaný z importu"); blok = true; }
-      else if (!MTART_PLATNE.has(raw)){ nalez(cislo,k,hl("mtart"),KRIT,"Neznámy typ materiálu",raw,"Riadok vynechaný z importu"); blok = true; }
+      if (!raw){ nalez(c,k,hl("mtart"),KRIT,"t_mtart_chyba",null,PRAZDNE,"a_von",null); blok = true; }
+      else if (!MTART_PLATNE.has(raw)){ nalez(c,k,hl("mtart"),KRIT,"t_mtart_nezn",null,raw,"a_von",null); blok = true; }
     }
 
-    /* EAN */
     let ean = null;
     if (m.ean !== undefined){
       const raw = cit(r,"ean") === null ? "" : String(cit(r,"ean")).trim();
       ean = raw.replace(/\s+/g,"");
-      if (!ean) nalez(cislo,k,hl("ean"),UPOZ,"Chýbajúci EAN","(prázdne)","Ponechané prázdne — doplniť u dodávateľa");
-      else if (!/^\d+$/.test(ean)) nalez(cislo,k,hl("ean"),KRIT,"EAN obsahuje nenumerické znaky",raw,"Vyžaduje overenie");
-      else if (ean.length !== 13) nalez(cislo,k,hl("ean"),KRIT,`Neplatná dĺžka EAN (${ean.length} z 13)`,ean,"Vyžaduje overenie");
-      else if (!ean13ok(ean)) nalez(cislo,k,hl("ean"),KRIT,"Nesedí kontrolná číslica EAN-13 (GS1)",ean,"Vyžaduje overenie u dodávateľa");
-      else if (ean !== raw) nalez(cislo,k,hl("ean"),UPOZ,"EAN obsahoval medzery",JSON.stringify(raw),`Očistené na ${ean}`);
+      if (!ean) nalez(c,k,hl("ean"),UPOZ,"t_ean_chyba",null,PRAZDNE,"a_ean_dopl",null);
+      else if (!/^\d+$/.test(ean)) nalez(c,k,hl("ean"),KRIT,"t_ean_nenum",null,raw,"a_overit",null);
+      else if (ean.length !== 13) nalez(c,k,hl("ean"),KRIT,"t_ean_dlzka",{n:ean.length},ean,"a_overit",null);
+      else if (!ean13ok(ean)) nalez(c,k,hl("ean"),KRIT,"t_ean_sucet",null,ean,"a_overit_dod",null);
+      else if (ean !== raw) nalez(c,k,hl("ean"),UPOZ,"t_ean_medzery",null,JSON.stringify(raw),"a_ocist",{v:ean});
     }
 
-    /* hmotnosti */
     let brgew = null, ntgew = null;
     if (m.brgew !== undefined){
       const [v, opr] = naCislo(cit(r,"brgew")); brgew = v;
-      if (v === null) nalez(cislo,k,hl("brgew"),UPOZ,"Chýbajúca hmotnosť","(prázdne)","Ponechané prázdne");
-      else if (opr) nalez(cislo,k,hl("brgew"),UPOZ,"Hmotnosť obsahovala jednotku alebo čiarku",String(cit(r,"brgew")),`Prevedené na ${v}`);
-      if (v !== null && v < 0){ nalez(cislo,k,hl("brgew"),KRIT,"Záporná hmotnosť",String(v),"Riadok vynechaný z importu"); blok = true; }
+      if (v === null) nalez(c,k,hl("brgew"),UPOZ,"t_hm_chyba",null,PRAZDNE,"a_prazdne",null);
+      else if (opr) nalez(c,k,hl("brgew"),UPOZ,"t_hm_format",null,String(cit(r,"brgew")),"a_preved",{v});
+      if (v !== null && v < 0){ nalez(c,k,hl("brgew"),KRIT,"t_hm_zap",null,String(v),"a_von",null); blok = true; }
     }
     if (m.ntgew !== undefined){
       const [v] = naCislo(cit(r,"ntgew")); ntgew = v;
-      if (v !== null && brgew !== null && v > brgew)
-        nalez(cislo,k,hl("ntgew"),KRIT,"Čistá hmotnosť je vyššia než hrubá",`${v} > ${brgew}`,"Riadok vynechaný z importu"), blok = true;
+      if (v !== null && brgew !== null && v > brgew){
+        nalez(c,k,hl("ntgew"),KRIT,"t_ntgew",null,`${v} > ${brgew}`,"a_von",null); blok = true; }
     }
 
-    /* cena a DPH */
     let cena = null, dph = null;
     if (m.cena !== undefined){
       const [v, opr] = naCislo(cit(r,"cena")); cena = v;
-      if (v === null){ nalez(cislo,k,hl("cena"),KRIT,"Chýbajúca alebo nečitateľná cena",String(cit(r,"cena")),"Riadok vynechaný z importu"); blok = true; }
+      if (v === null){ nalez(c,k,hl("cena"),KRIT,"t_cena_chyba",null,String(cit(r,"cena")),"a_von",null); blok = true; }
       else {
-        if (opr) nalez(cislo,k,hl("cena"),UPOZ,"Cena v textovom formáte",String(cit(r,"cena")),`Prevedené na ${v.toFixed(2)}`);
-        if (v < 0){ nalez(cislo,k,hl("cena"),KRIT,"Záporná cena",v.toFixed(2),"Riadok vynechaný z importu"); blok = true; }
-        else if (v === 0){ nalez(cislo,k,hl("cena"),KRIT,"Nulová cena","0.00","Riadok vynechaný z importu"); blok = true; }
+        if (opr) nalez(c,k,hl("cena"),UPOZ,"t_cena_format",null,String(cit(r,"cena")),"a_preved",{v:v.toFixed(2)});
+        if (v < 0){ nalez(c,k,hl("cena"),KRIT,"t_cena_zap",null,v.toFixed(2),"a_von",null); blok = true; }
+        else if (v === 0){ nalez(c,k,hl("cena"),KRIT,"t_cena_nula",null,"0.00","a_von",null); blok = true; }
       }
     }
     if (m.dph !== undefined){
       let [v, opr] = naCislo(cit(r,"dph"));
-      if (v !== null && v > 0 && v < 1){ v = v * 100; opr = true; }
+      if (v !== null && v > 0 && v < 1){ v *= 100; opr = true; }
       dph = v;
-      if (v === null){ nalez(cislo,k,hl("dph"),KRIT,"Chýbajúca sadzba DPH",String(cit(r,"dph")),"Riadok vynechaný z importu"); blok = true; }
+      if (v === null){ nalez(c,k,hl("dph"),KRIT,"t_dph_chyba",null,String(cit(r,"dph")),"a_von",null); blok = true; }
       else {
-        if (opr) nalez(cislo,k,hl("dph"),UPOZ,"Sadzba DPH v textovom formáte",String(cit(r,"dph")),`Prevedené na ${Math.round(v)}`);
-        if (!DPH_PLATNE.has(Math.round(v))){ nalez(cislo,k,hl("dph"),KRIT,"Neplatná sadzba DPH",String(Math.round(v)),"Riadok vynechaný z importu"); blok = true; }
+        if (opr) nalez(c,k,hl("dph"),UPOZ,"t_dph_format",null,String(cit(r,"dph")),"a_preved",{v:Math.round(v)});
+        if (!DPH_PLATNE.has(Math.round(v))){ nalez(c,k,hl("dph"),KRIT,"t_dph_nepl",null,String(Math.round(v)),"a_von",null); blok = true; }
       }
     }
 
-    /* duplicity */
     if (k){
-      if (videneKluce.has(k)){
-        nalez(cislo,k,hl("kluc"),KRIT,"Duplicitný kľúč",k,`Duplicita riadku ${videneKluce.get(k)} — vynechané`);
-        blok = true;
-      } else videneKluce.set(k, cislo);
+      if (videneKluce.has(k)){ nalez(c,k,hl("kluc"),KRIT,"t_dup",null,k,"a_dup",{r:videneKluce.get(k)}); blok = true; }
+      else videneKluce.set(k, c);
     }
     if (n){
       const kn = klucNazvu(n);
       if (videneNazvy.has(kn) && !blok)
-        nalez(cislo,k,hl("nazov"),UPOZ,"Takmer zhodný názov",n,`Zhoda s riadkom ${videneNazvy.get(kn)} — overiť duplicitu`);
-      else if (!videneNazvy.has(kn)) videneNazvy.set(kn, cislo);
+        nalez(c,k,hl("nazov"),UPOZ,"t_podobny",null,n,"a_over_dup",{r:videneNazvy.get(kn)});
+      else if (!videneNazvy.has(kn)) videneNazvy.set(kn, c);
     }
 
     if (!blok){
@@ -545,36 +660,25 @@ function skontroluj(riadky){
       for (const pole of PORADIE) if (m[pole] !== undefined) out.push(hodnota(pole));
       ciste.push(out);
     }
-
-    function hodnota(pole){
-      switch(pole){
-        case "kluc": return k;
-        case "nazov": return n;
-        case "mj": return mj;
-        case "mtart": return mtart;
-        case "ean": return ean || null;
-        case "brgew": return brgew;
-        case "ntgew": return ntgew;
+    function hodnota(p){
+      switch(p){
+        case "kluc": return k; case "nazov": return n; case "mj": return mj;
+        case "mtart": return mtart; case "ean": return ean || null;
+        case "brgew": return brgew; case "ntgew": return ntgew;
         case "cena": return cena === null ? null : Math.round(cena*100)/100;
         case "dph": return dph === null ? null : Math.round(dph);
-        default: {
-          const v = cit(r, pole);
-          return v === null ? null : String(v).trim();
-        }
+        default: { const v = cit(r, p); return v === null ? null : String(v).trim(); }
       }
     }
   }
-
-  function hl(pole){ return m[pole] === undefined ? pole : String(hlavicka[m[pole]]); }
   const hlavickaCista = PORADIE.filter(p => m[p] !== undefined).map(p => String(hlavicka[m[p]]));
   return { hlavickaCista, ciste, nalezy:N, poctet: riadky.length - 1, mapovane:Object.keys(m) };
 }
-const PORADIE = ["kluc","nazov","mtart","mj","matkl","ean","brgew","ntgew","gewei","werks","cena","dph","dodavatel"];
 
 /* ============================== ukážka ================================ */
-/* Každý defekt v ukážke je ZÁMERNÝ a overiteľný. Všetky ostatné EAN-y majú
-   správnu kontrolnú číslicu podľa GS1 — demo, ktoré hlási neexistujúce
-   chyby, je horšie než žiadne demo. */
+/* Každý defekt je ZÁMERNÝ a overiteľný. Ostatné EAN-y majú správnu
+   kontrolnú číslicu podľa GS1 — demo, ktoré hlási neexistujúce chyby,
+   je horšie než žiadne demo. */
 const UKAZKA = [
 ["MATNR","MAKTX","MTART","MEINS","MATKL","EAN11","BRGEW","NTGEW","GEWEI","WERKS"],
 ["100001","Ložisko guľkové 6204 2RS","ROH","ks","LOZ","8586001234566",0.12,0.11,"KG","1000"],
@@ -596,42 +700,63 @@ const UKAZKA = [
 
 /* =============================== UI =================================== */
 const $ = s => document.querySelector(s);
-let posledne = null;
+let posledne = null, poslednaChyba = null;
 
-function ukazChybu(t){ const e = $("#chyba"); e.textContent = t; e.hidden = false; $("#vysledok").hidden = true; }
+const PRAZDNE_ZN = "\u0000prazdne";
+const zobrazPov = v => v === PRAZDNE_ZN ? t("prazdne") : String(v ?? "");
+
+function prelozStatiku(){
+  document.documentElement.lang = jazyk;
+  $("#eyebrow").textContent = t("eyebrow");
+  $("#h1").textContent = t("h1");
+  $("#lede").textContent = t("lede");
+  $("#privB").textContent = t("priv_b");
+  $("#privT").textContent = " " + t("priv");
+  $("#dropTxt").textContent = t("drop");
+  $("#alebo").textContent = t("alebo");
+  $("#pick").textContent = t("pick");
+  $("#demo").textContent = t("demo");
+  $("#stiahniCiste").textContent = t("dl_ciste");
+  $("#stiahniProtokol").textContent = t("dl_prot");
+  $("#hProt").firstChild.nodeValue = t("h_prot") + " ";
+  $("#fKontroly").textContent = t("f_kontroly");
+  $("#fHlavicky").textContent = t("f_hlavicky");
+  document.querySelectorAll("#tabNalezy thead th").forEach((th, i) => th.textContent = t("th")[i]);
+  document.querySelectorAll("#jazyky button").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.j === jazyk)));
+}
+
+function ukazChybu(txt){ const e = $("#chyba"); e.textContent = txt; e.hidden = false; $("#vysledok").hidden = true; }
 
 function vykresli(v){
-  posledne = v;
+  posledne = v; poslednaChyba = null;
   $("#chyba").hidden = true;
   const krit = v.nalezy.filter(n => n.zav === KRIT).length;
-  const upoz = v.nalezy.length - krit;
-
   $("#stats").innerHTML = [
-    ["Riadkov na vstupe", v.poctet, ""],
-    ["Prejde do importu", v.ciste.length, "g"],
-    ["Nálezov spolu", v.nalezy.length, ""],
-    ["Kritických", krit, "c"],
-    ["Upozornení", upoz, "w"],
+    ["s_vstup", v.poctet, ""], ["s_ciste", v.ciste.length, "g"],
+    ["s_nalezy", v.nalezy.length, ""], ["s_krit", krit, "c"],
+    ["s_upoz", v.nalezy.length - krit, "w"],
   ].map(([k, val, cls]) =>
-    `<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${val}</div></div>`).join("");
+    `<div class="stat ${cls}"><div class="k">${esc(t(k))}</div><div class="v">${val}</div></div>`).join("");
 
-  $("#pocetNalezov").textContent =
-    v.nalezy.length ? `${v.nalezy.length} nálezov · ${krit} kritických` : "bez nálezov";
+  $("#pocetNalezov").textContent = v.nalezy.length
+    ? t("n_spolu", { n:v.nalezy.length, k:krit }) : t("bez_nalezov");
 
   const tb = $("#tabNalezy tbody");
   if (!v.nalezy.length){
-    tb.innerHTML = `<tr><td colspan="7" class="empty">Žiadne nálezy — dáta sú v poriadku.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="7" class="empty">${esc(t("ok"))}</td></tr>`;
   } else {
-    const zoradene = [...v.nalezy].sort((a,b) =>
-      (a.zav === b.zav ? a.riadok - b.riadok : (a.zav === KRIT ? -1 : 1)));
-    tb.innerHTML = zoradene.map(n => `<tr class="${n.zav === KRIT ? "k" : "u"}">
-      <td><span class="sev ${n.zav === KRIT ? "k" : "u"}">${n.zav}</span></td>
+    const z = [...v.nalezy].sort((a,b) => a.zav === b.zav ? a.riadok - b.riadok : (a.zav === KRIT ? -1 : 1));
+    tb.innerHTML = z.map(n => {
+      const kr = n.zav === KRIT;
+      return `<tr class="${kr?"k":"u"}">
+      <td><span class="sev ${kr?"k":"u"}">${esc(t(kr?"KRIT":"UPOZ"))}</span></td>
       <td class="num mono">${n.riadok}</td>
       <td class="mono">${esc(n.kluc || "—")}</td>
       <td>${esc(n.pole)}</td>
-      <td>${esc(n.typ)}</td>
-      <td class="mono">${esc(n.pov ?? "")}</td>
-      <td>${esc(n.akcia)}</td></tr>`).join("");
+      <td>${esc(t(n.tk, n.tp))}</td>
+      <td class="mono">${esc(zobrazPov(n.pov))}</td>
+      <td>${esc(t(n.ak, n.ap))}</td></tr>`; }).join("");
   }
   $("#vysledok").hidden = false;
 }
@@ -642,39 +767,52 @@ function stiahni(blob, meno){
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
-
 async function spracujSubor(f){
-  try{
-    const ab = await f.arrayBuffer();
-    vykresli(skontroluj(await citajXlsx(ab)));
-  } catch(e){ ukazChybu("Nepodarilo sa spracovať súbor: " + e.message); }
+  try { vykresli(skontroluj(await citajXlsx(await f.arrayBuffer()))); }
+  catch(e){ poslednaChyba = e.message; ukazChybu(t("chyba", { e:e.message })); }
+}
+function nacitajUkazku(){
+  try { vykresli(skontroluj(UKAZKA.map(r => r.slice()))); }
+  catch(e){ poslednaChyba = e.message; ukazChybu(t("chyba", { e:e.message })); }
 }
 
 $("#pick").addEventListener("click", () => $("#file").click());
 $("#file").addEventListener("change", e => { if (e.target.files[0]) spracujSubor(e.target.files[0]); });
-$("#demo").addEventListener("click", () => {
-  try { vykresli(skontroluj(UKAZKA.map(r => r.slice()))); }
-  catch(e){ ukazChybu(e.message); }
-});
+$("#demo").addEventListener("click", nacitajUkazku);
 const drop = $("#drop");
-drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#file").click(); }});
-["dragenter","dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("hot"); }));
-["dragleave","drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("hot"); }));
+drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); $("#file").click(); }});
+["dragenter","dragover"].forEach(x => drop.addEventListener(x, e => { e.preventDefault(); drop.classList.add("hot"); }));
+["dragleave","drop"].forEach(x => drop.addEventListener(x, e => { e.preventDefault(); drop.classList.remove("hot"); }));
 drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) spracujSubor(f); });
 
 $("#stiahniCiste").addEventListener("click", () => {
-  if (!posledne) return;
-  stiahni(urobXlsx(posledne.hlavickaCista, posledne.ciste), "cisty_import.xlsx");
+  if (posledne) stiahni(urobXlsx(posledne.hlavickaCista, posledne.ciste), "clean_import.xlsx");
 });
 $("#stiahniProtokol").addEventListener("click", () => {
   if (!posledne) return;
-  const h = ["Závažnosť","Riadok","Kľúč","Pole","Zistenie","Pôvodná hodnota","Vykonaná akcia"];
-  const r = posledne.nalezy.map(n => [n.zav, n.riadok, n.kluc, n.pole, n.typ, String(n.pov ?? ""), n.akcia]);
-  stiahni(urobXlsx(h, r), "protokol_nalezov.xlsx");
+  const h = t("th");
+  const r = posledne.nalezy.map(n => [ t(n.zav === KRIT ? "KRIT" : "UPOZ"), n.riadok, n.kluc,
+    n.pole, t(n.tk, n.tp), zobrazPov(n.pov), t(n.ak, n.ap) ]);
+  stiahni(urobXlsx(h, r), "findings_log.xlsx");
 });
 
-/* otvor sa v pracovnom stave */
-vykresli(skontroluj(UKAZKA.map(r => r.slice())));
-</script>
-</body>
-</html>
+$("#jazyky").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  jazyk = b.dataset.j;
+  try { localStorage.setItem("mdcheck_jazyk", jazyk); } catch(_){}
+  prelozStatiku();
+  if (posledne) vykresli(posledne);
+  else if (poslednaChyba) ukazChybu(t("chyba", { e:poslednaChyba }));
+});
+
+/* štart: uložená voľba, inak jazyk prehliadača, inak slovenčina */
+(function(){
+  let j = null;
+  try { j = localStorage.getItem("mdcheck_jazyk"); } catch(_){}
+  if (!j){ const n = (navigator.language || "sk").slice(0,2).toLowerCase();
+           j = ["sk","en","de"].includes(n) ? n : (n === "cs" ? "sk" : "en"); }
+  jazyk = L[j] ? j : "sk";
+  prelozStatiku();
+  nacitajUkazku();
+})();
+</script></body></html>
