@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kontrola kmeňových dát</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2320567F'/%3E%3Crect x='7' y='8' width='18' height='2.6' rx='1.3' fill='%23fff' opacity='.9'/%3E%3Crect x='7' y='13.7' width='12' height='2.6' rx='1.3' fill='%23fff' opacity='.55'/%3E%3Cpath d='M9 22.3l3.6 3.6L24 14.5' fill='none' stroke='%2359D19B' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ground:#F5F6F8; --surface:#FFFFFF; --surface-2:#EDEFF3;
+  --ink:#191D24; --muted:#5F6B7C; --line:#D8DDE5;
+  --accent:#20567F; --accent-soft:#E4EDF5;
+  --crit:#A8200F; --crit-soft:#FBE9E6;
+  --warn:#8A4B06; --warn-soft:#FCF0E2;
+  --ok:#0A6340; --ok-soft:#E3F2EB;
+  --shadow:0 1px 2px rgba(20,30,45,.08), 0 6px 18px rgba(20,30,45,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#12151A; --surface:#191D24; --surface-2:#222732;
+    --ink:#E7EAEF; --muted:#94A0B2; --line:#303744;
+    --accent:#77AEDC; --accent-soft:#1B2C3D;
+    --crit:#F78C7C; --crit-soft:#33201D;
+    --warn:#E9A13B; --warn-soft:#31261421;
+    --ok:#5FCB9B; --ok-soft:#162C24;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#12151A; --surface:#191D24; --surface-2:#222732;
+  --ink:#E7EAEF; --muted:#94A0B2; --line:#303744;
+  --accent:#77AEDC; --accent-soft:#1B2C3D;
+  --crit:#F78C7C; --crit-soft:#33201D;
+  --warn:#E9A13B; --warn-soft:#312614;
+  --ok:#5FCB9B; --ok-soft:#162C24;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font:400 15px/1.55 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding-inline:16px; padding-block:28px 56px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; display:flex; flex-direction:column; gap:22px}
+h1{font-size:25px; font-weight:700; letter-spacing:-.015em; margin:0; text-wrap:balance}
+.lede{color:var(--muted); margin:0; max-width:64ch}
+.eyebrow{
+  font:500 11px/1 "IBM Plex Mono", ui-monospace, monospace;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin:0 0 8px;
+}
+header .priv{
+  margin-top:12px; display:inline-flex; gap:8px; align-items:baseline;
+  background:var(--ok-soft); color:var(--ok); border:1px solid color-mix(in srgb, var(--ok) 28%, transparent);
+  border-radius:3px; padding:7px 11px; font-size:13px; font-weight:500;
+}
+.drop{
+  border:1.5px dashed var(--line); border-radius:6px; background:var(--surface);
+  padding:30px 22px; text-align:center; transition:border-color .15s, background .15s;
+}
+.drop.hot{border-color:var(--accent); background:var(--accent-soft)}
+.drop p{margin:0 0 4px; font-weight:600}
+.drop small{color:var(--muted); display:block; margin-bottom:16px}
+.btn{
+  font:inherit; font-weight:600; font-size:14px; cursor:pointer;
+  border:1px solid var(--accent); background:var(--accent); color:#fff;
+  padding:9px 16px; border-radius:4px;
+}
+.btn.ghost{background:transparent; color:var(--accent)}
+.btn:focus-visible, .drop:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.btn[disabled]{opacity:.5; cursor:not-allowed}
+.row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
+  background:var(--line); border:1px solid var(--line); border-radius:6px; overflow:hidden}
+.stat{background:var(--surface); padding:15px 17px}
+.stat .k{font:500 11px/1 "IBM Plex Mono",monospace; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted)}
+.stat .v{font-size:27px; font-weight:700; font-variant-numeric:tabular-nums; margin-top:7px; line-height:1}
+.stat.c .v{color:var(--crit)} .stat.w .v{color:var(--warn)} .stat.g .v{color:var(--ok)}
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:6px; box-shadow:var(--shadow)}
+.panel > h2{
+  margin:0; padding:14px 18px; border-bottom:1px solid var(--line);
+  font-size:15px; font-weight:600; display:flex; justify-content:space-between; gap:12px; align-items:baseline;
+}
+.panel > h2 span{font:400 13px/1 "IBM Plex Mono",monospace; color:var(--muted)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+th{font:500 11px/1.3 "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); background:var(--surface-2); white-space:nowrap; position:sticky; top:0}
+tbody tr:last-child td{border-bottom:0}
+td.mono,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12.5px}
+td.num{text-align:right; font-variant-numeric:tabular-nums}
+.sev{display:inline-block; font:500 10.5px/1 "IBM Plex Mono",monospace; letter-spacing:.07em;
+  padding:4px 7px; border-radius:3px; white-space:nowrap}
+.sev.k{background:var(--crit-soft); color:var(--crit)}
+.sev.u{background:var(--warn-soft); color:var(--warn)}
+tr.k td:first-child{box-shadow:inset 3px 0 0 var(--crit)}
+tr.u td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+.empty{padding:26px 18px; color:var(--muted); text-align:center}
+footer{color:var(--muted); font-size:13px; border-top:1px solid var(--line); padding-top:16px}
+footer code{font-family:"IBM Plex Mono",monospace; font-size:12px}
+.err{background:var(--crit-soft); color:var(--crit); border:1px solid var(--crit);
+  border-radius:4px; padding:12px 14px; font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Kontrola kvality · materiálový kmeň</p>
+  <h1>Kontrola kmeňových dát</h1>
+  <p class="lede">Načíta Excel s materiálovým kmeňom alebo produktovým katalógom,
+  nájde chyby, ktoré zablokujú import do SAP, a vráti vyčistený súbor spolu
+  s protokolom nálezov.</p>
+  <div class="priv"><strong>Bez odosielania.</strong>
+  Súbor sa spracuje priamo v prehliadači — na žiadny server neodíde.</div>
+</header>
+
+<div class="drop" id="drop" tabindex="0" role="button" aria-label="Vybrať súbor">
+  <p>Presuň sem súbor .xlsx</p>
+  <small>alebo</small>
+  <div class="row">
+    <button class="btn" id="pick" type="button">Vybrať súbor</button>
+    <button class="btn ghost" id="demo" type="button">Načítať ukážku</button>
+  </div>
+  <input type="file" id="file" accept=".xlsx" hidden>
+</div>
+
+<div id="chyba" class="err" hidden></div>
+
+<div id="vysledok" hidden>
+  <div class="stats" id="stats"></div>
+
+  <div class="row" style="justify-content:flex-start; margin-top:20px">
+    <button class="btn" id="stiahniCiste" type="button">Stiahnuť čistý import</button>
+    <button class="btn ghost" id="stiahniProtokol" type="button">Stiahnuť protokol</button>
+  </div>
+
+  <div class="panel" style="margin-top:20px">
+    <h2>Protokol nálezov <span id="pocetNalezov"></span></h2>
+    <div class="scroll"><table id="tabNalezy">
+      <thead><tr>
+        <th>Závažnosť</th><th>Riadok</th><th>Kľúč</th><th>Pole</th>
+        <th>Zistenie</th><th>Pôvodná hodnota</th><th>Vykonaná akcia</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+</div>
+
+<footer>
+  <p>Kontroly: povinné polia · duplicitné kľúče · takmer zhodné názvy ·
+  dĺžka textu nad limit SAP (40 znakov) · číselník merných jednotiek a typov materiálu ·
+  kontrolná číslica EAN-13 podľa GS1 · čistá hmotnosť nad hrubú ·
+  čísla v textovom formáte · desatinná čiarka · neplatné sadzby DPH.</p>
+  <p>Rozpoznané hlavičky: <code>MATNR, MAKTX, MEINS, MTART, MATKL, EAN11, BRGEW, NTGEW, GEWEI, WERKS</code>
+  aj slovenské názvy (<code>kód, názov, EAN, MJ, cena, DPH, hmotnosť, dodávateľ, kategória</code>).</p>
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* ====================== ZIP / XLSX bez knižnice ======================= */
+const td = new TextDecoder(), te = new TextEncoder();
+
+async function inflate(buf){
+  const ds = new DecompressionStream("deflate-raw");
+  const s = new Blob([buf]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+
+async function citajZip(ab){
+  const u = new Uint8Array(ab), dv = new DataView(ab);
+  let eocd = -1;
+  for (let i = u.length - 22; i >= Math.max(0, u.length - 66000); i--){
+    if (dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("Súbor nie je platný .xlsx (chýba ZIP záznam).");
+  const pocet = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const von = {};
+  for (let i = 0; i < pocet; i++){
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const metoda = dv.getUint16(p + 10, true);
+    const compLen = dv.getUint32(p + 20, true);
+    const nLen = dv.getUint16(p + 28, true);
+    const eLen = dv.getUint16(p + 30, true);
+    const cLen = dv.getUint16(p + 32, true);
+    const lho  = dv.getUint32(p + 42, true);
+    const meno = td.decode(u.subarray(p + 46, p + 46 + nLen));
+    const lnLen = dv.getUint16(lho + 26, true), leLen = dv.getUint16(lho + 28, true);
+    const dataOd = lho + 30 + lnLen + leLen;
+    von[meno] = { metoda, data: u.subarray(dataOd, dataOd + compLen) };
+    p += 46 + nLen + eLen + cLen;
+  }
+  const out = {};
+  for (const [meno, z] of Object.entries(von)){
+    out[meno] = z.metoda === 0 ? z.data : await inflate(z.data);
+  }
+  return out;
+}
+
+function stlpecNaIndex(ref){
+  let n = 0;
+  for (const ch of ref){
+    const c = ch.charCodeAt(0);
+    if (c < 65 || c > 90) break;
+    n = n * 26 + (c - 64);
+  }
+  return n - 1;
+}
+
+async function citajXlsx(ab){
+  const z = await citajZip(ab);
+  const dp = new DOMParser();
+
+  let zdielane = [];
+  const ss = z["xl/sharedStrings.xml"];
+  if (ss){
+    const d = dp.parseFromString(td.decode(ss), "application/xml");
+    zdielane = [...d.getElementsByTagName("si")].map(si =>
+      [...si.getElementsByTagName("t")].map(t => t.textContent).join(""));
+  }
+
+  let cesta = Object.keys(z).find(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k));
+  if (!cesta) throw new Error("V súbore nie je žiadny hárok.");
+  const d = dp.parseFromString(td.decode(z[cesta]), "application/xml");
+
+  const riadky = [];
+  for (const r of d.getElementsByTagName("row")){
+    const bunky = [];
+    for (const c of r.getElementsByTagName("c")){
+      const i = stlpecNaIndex(c.getAttribute("r") || "A1");
+      const t = c.getAttribute("t");
+      let v;
+      if (t === "inlineStr"){
+        v = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+      } else {
+        const vn = c.getElementsByTagName("v")[0];
+        v = vn ? vn.textContent : null;
+        if (t === "s" && v !== null) v = zdielane[+v] ?? "";
+        else if (v !== null && t !== "str") { const n = Number(v); v = isNaN(n) ? v : n; }
+      }
+      if (i >= 0) bunky[i] = (v === undefined ? null : v);
+    }
+    riadky.push(bunky);
+  }
+  while (riadky.length && !(riadky[riadky.length-1]||[]).some(x => x !== null && x !== undefined && x !== ""))
+    riadky.pop();
+  return riadky;
+}
+
+/* --- zápis .xlsx: ZIP bez kompresie (STORE) + inline reťazce --- */
+const CRC = (() => { const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++){ let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0; } return t; })();
+function crc32(u){ let c = 0xFFFFFFFF;
+  for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0; }
+
+function zipuj(subory){
+  const chunks = [], centr = []; let posun = 0;
+  const now = new Date();
+  const cas = ((now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1)) & 0xFFFF;
+  const dat = (((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate()) & 0xFFFF;
+  for (const [meno, text] of subory){
+    const n = te.encode(meno), d = te.encode(text), c = crc32(d);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true);
+    lh.setUint16(6, 0, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, cas, true); lh.setUint16(12, dat, true);
+    lh.setUint32(14, c, true); lh.setUint32(18, d.length, true);
+    lh.setUint32(22, d.length, true); lh.setUint16(26, n.length, true);
+    lh.setUint16(28, 0, true);
+    chunks.push(new Uint8Array(lh.buffer), n, d);
+    const cd = new DataView(new ArrayBuffer(46));
+    cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true);
+    cd.setUint16(6, 20, true); cd.setUint16(8, 0, true); cd.setUint16(10, 0, true);
+    cd.setUint16(12, cas, true); cd.setUint16(14, dat, true);
+    cd.setUint32(16, c, true); cd.setUint32(20, d.length, true);
+    cd.setUint32(24, d.length, true); cd.setUint16(28, n.length, true);
+    cd.setUint32(42, posun, true);
+    centr.push(new Uint8Array(cd.buffer), n);
+    posun += 30 + n.length + d.length;
+  }
+  const cdZac = posun;
+  let cdDlzka = 0; for (const c of centr) cdDlzka += c.length;
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true);
+  e.setUint16(8, subory.length, true); e.setUint16(10, subory.length, true);
+  e.setUint32(12, cdDlzka, true); e.setUint32(16, cdZac, true);
+  return new Blob([...chunks, ...centr, new Uint8Array(e.buffer)],
+    { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function pismenoStlpca(i){ let s = "";
+  for (i++; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s;
+  return s; }
+
+function urobXlsx(hlavicka, riadky){
+  let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  const vsetky = [hlavicka, ...riadky];
+  vsetky.forEach((r, ri) => {
+    xml += `<row r="${ri+1}">`;
+    r.forEach((v, ci) => {
+      if (v === null || v === undefined || v === "") return;
+      const ref = pismenoStlpca(ci) + (ri + 1);
+      if (typeof v === "number" && isFinite(v)) xml += `<c r="${ref}"><v>${v}</v></c>`;
+      else xml += `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+    });
+    xml += "</row>";
+  });
+  xml += "</sheetData></worksheet>";
+
+  return zipuj([
+    ["[Content_Types].xml",
+     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+     + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+     + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+     + '<Default Extension="xml" ContentType="application/xml"/>'
+     + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+     + '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+     + '</Types>'],
+    ["_rels/.rels",
+     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+     + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+     + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+     + '</Relationships>'],
+    ["xl/workbook.xml",
+     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+     + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+     + ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+     + '<sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets></workbook>'],
+    ["xl/_rels/workbook.xml.rels",
+     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+     + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+     + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+     + '</Relationships>'],
+    ["xl/worksheets/sheet1.xml", xml],
+  ]);
+}
+
+/* ========================== číselníky a kontroly ====================== */
+const MJ_MAP = { ks:"ST", "ks.":"ST", kus:"ST", kusy:"ST", pcs:"ST", pc:"ST", st:"ST", ea:"ST",
+  bal:"KAR", balenie:"KAR", kar:"KAR", kartón:"KAR", karton:"KAR",
+  sada:"SET", set:"SET", m:"M", meter:"M", bm:"M", mm:"MM", cm:"CM",
+  kg:"KG", g:"G", t:"TO", l:"L", ml:"ML", m2:"M2", m3:"M3", vrece:"VRE" };
+const MJ_PLATNE = new Set(["ST","KAR","SET","M","MM","CM","KG","G","TO","L","ML","M2","M3","VRE"]);
+const MTART_PLATNE = new Set(["ROH","HALB","FERT","HAWA","DIEN","VERP","HIBE","NLAG","UNBW","ERSA"]);
+const DPH_PLATNE = new Set([0,10,20,23]);
+const MAKTX_MAX = 40;          // limit dĺžky krátkeho textu v SAP (MAKTX)
+
+/* rozpoznanie hlavičiek — SAP názvy aj bežné slovenské */
+/* SAP technické názvy polí (MATNR, MAKTX…) sú rovnaké vo všetkých jazykoch —
+   exporty s nimi fungujú všade. Popisné hlavičky sa líšia, tak sú tu
+   slovenské, české, anglické aj nemecké varianty. */
+const POLIA = {
+  kluc:    ["matnr","material","materiál","materialnummer","materialnr","matnr.",
+            "číslo materiálu","cislo materialu","material number","material no",
+            "kód","kod","code","kód produktu","kod produktu","sku","item","artikel","artikelnummer"],
+  nazov:   ["maktx","názov","nazov","popis","description","text","názov produktu","nazov produktu",
+            "material description","materialkurztext","kurztext","bezeichnung","materialbezeichnung",
+            "short text","description of material"],
+  mj:      ["meins","mj","merná jednotka","merna jednotka","jednotka","uom","unit",
+            "base unit","base unit of measure","basismengeneinheit","mengeneinheit","basis-me","me"],
+  mtart:   ["mtart","typ materiálu","typ materialu","material type","druh materiálu","materialart","art"],
+  matkl:   ["matkl","skupina materiálu","skupina materialu","material group","kategória","kategoria",
+            "category","warengruppe","materialgruppe"],
+  ean:     ["ean11","ean","ean13","ean/upc","čiarový kód","ciarovy kod","barcode","gtin","strichcode"],
+  brgew:   ["brgew","hrubá hmotnosť","hruba hmotnost","gross weight","hmotnosť","hmotnost","weight",
+            "bruttogewicht","gewicht"],
+  ntgew:   ["ntgew","čistá hmotnosť","cista hmotnost","net weight","nettogewicht"],
+  gewei:   ["gewei","jednotka hmotnosti","weight unit","gewichtseinheit"],
+  werks:   ["werks","závod","zavod","plant","werk","prevádzka"],
+  cena:    ["cena","price","cena bez dph","stprs","verpr","netto cena","preis","standardpreis",
+            "moving average price","standard price"],
+  dph:     ["dph","sadzba dph","vat","tax","mwst","steuer","vat rate","tax rate"],
+  dodavatel:["lifnr","dodávateľ","dodavatel","supplier","vendor","kód dodávateľa","kod dodavatela",
+            "lieferant","lieferantennummer","vendor number"],
+};
+function mapujHlavicku(h){
+  const map = {}; const pouzite = new Set();
+  h.forEach((n, i) => {
+    const t = String(n ?? "").trim().toLowerCase();
+    if (!t) return;
+    for (const [pole, varianty] of Object.entries(POLIA)){
+      if (pouzite.has(pole)) continue;
+      if (varianty.includes(t)){ map[pole] = i; pouzite.add(pole); return; }
+    }
+  });
+  return map;
+}
+
+function ean13ok(e){
+  if (!/^\d{13}$/.test(e)) return false;
+  let s = 0; for (let i = 0; i < 12; i++) s += (+e[i]) * (i % 2 === 0 ? 1 : 3);
+  return (10 - s % 10) % 10 === +e[12];
+}
+function naCislo(v){
+  if (v === null || v === undefined || (typeof v === "string" && !v.trim())) return [null, true];
+  if (typeof v === "number") return [v, false];
+  let t = String(v).trim().replace(/[^\d,.\-]/g, "").replace(/,/g, ".");
+  t = t.replace(/\.(?=.*\.)/g, "");
+  const n = Number(t);
+  return isNaN(n) ? [null, true] : [n, true];
+}
+const klucNazvu = s => String(s).toLowerCase().normalize("NFD")
+  .replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "");
+
+const KRIT = "KRITICKÁ", UPOZ = "UPOZORNENIE";
+
+function skontroluj(riadky){
+  if (!riadky.length) throw new Error("Súbor je prázdny.");
+  const hlavicka = riadky[0].map(x => x ?? "");
+  const m = mapujHlavicku(hlavicka);
+  if (m.kluc === undefined)
+    throw new Error("Nenašiel som stĺpec s kľúčom materiálu. Očakávam hlavičku ako MATNR, Materiál alebo Kód.");
+
+  const N = [], ciste = [], videneKluce = new Map(), videneNazvy = new Map();
+  const cit = (r, p) => m[p] === undefined ? null : (r[m[p]] ?? null);
+  const nalez = (r, k, pole, zav, typ, pov, akcia) =>
+    N.push({ riadok:r, kluc:k, pole, zav, typ, pov, akcia });
+
+  for (let i = 1; i < riadky.length; i++){
+    const r = riadky[i], cislo = i + 1;
+    if (!r || !r.some(x => x !== null && x !== undefined && x !== "")) continue;
+    let blok = false;
+
+    /* kľúč */
+    const kRaw = cit(r,"kluc") === null ? "" : String(cit(r,"kluc"));
+    const k = kRaw.trim().toUpperCase();
+    if (!k){ nalez(cislo,"",hl("kluc"),KRIT,"Chýbajúci povinný údaj","(prázdne)","Riadok vynechaný z importu"); blok = true; }
+    else if (k !== kRaw) nalez(cislo,k,hl("kluc"),UPOZ,"Nekonzistentný zápis kľúča",JSON.stringify(kRaw),`Normalizované na ${k}`);
+
+    /* názov */
+    const nRaw = cit(r,"nazov") === null ? "" : String(cit(r,"nazov"));
+    const n = nRaw.replace(/\s+/g," ").trim();
+    if (m.nazov !== undefined){
+      if (!n){ nalez(cislo,k,hl("nazov"),KRIT,"Chýbajúci povinný údaj","(prázdne)","Riadok vynechaný z importu"); blok = true; }
+      else {
+        if (n !== nRaw) nalez(cislo,k,hl("nazov"),UPOZ,"Viacnásobné alebo koncové medzery",JSON.stringify(nRaw),`Upravené na „${n}“`);
+        if (n.length > MAKTX_MAX)
+          nalez(cislo,k,hl("nazov"),KRIT,`Text dlhší než limit SAP (${n.length} z ${MAKTX_MAX} znakov)`,n,"SAP text oreže — skrátiť ručne");
+      }
+    }
+
+    /* merná jednotka */
+    let mj = null;
+    if (m.mj !== undefined){
+      const raw = cit(r,"mj") === null ? "" : String(cit(r,"mj")).trim();
+      mj = MJ_MAP[raw.toLowerCase()] ?? raw.toUpperCase();
+      if (!raw){ nalez(cislo,k,hl("mj"),KRIT,"Chýbajúci povinný údaj","(prázdne)","Riadok vynechaný z importu"); blok = true; }
+      else if (mj !== raw.toUpperCase()) nalez(cislo,k,hl("mj"),UPOZ,"Nekonzistentná merná jednotka",raw,`Zjednotené na ${mj}`);
+      else if (!MJ_PLATNE.has(mj)) nalez(cislo,k,hl("mj"),KRIT,"Merná jednotka nie je v číselníku",mj,"Riadok vynechaný z importu"), blok = true;
+    }
+
+    /* typ materiálu */
+    let mtart = null;
+    if (m.mtart !== undefined){
+      const raw = cit(r,"mtart") === null ? "" : String(cit(r,"mtart")).trim().toUpperCase();
+      mtart = raw;
+      if (!raw){ nalez(cislo,k,hl("mtart"),KRIT,"Chýbajúci typ materiálu","(prázdne)","Riadok vynechaný z importu"); blok = true; }
+      else if (!MTART_PLATNE.has(raw)){ nalez(cislo,k,hl("mtart"),KRIT,"Neznámy typ materiálu",raw,"Riadok vynechaný z importu"); blok = true; }
+    }
+
+    /* EAN */
+    let ean = null;
+    if (m.ean !== undefined){
+      const raw = cit(r,"ean") === null ? "" : String(cit(r,"ean")).trim();
+      ean = raw.replace(/\s+/g,"");
+      if (!ean) nalez(cislo,k,hl("ean"),UPOZ,"Chýbajúci EAN","(prázdne)","Ponechané prázdne — doplniť u dodávateľa");
+      else if (!/^\d+$/.test(ean)) nalez(cislo,k,hl("ean"),KRIT,"EAN obsahuje nenumerické znaky",raw,"Vyžaduje overenie");
+      else if (ean.length !== 13) nalez(cislo,k,hl("ean"),KRIT,`Neplatná dĺžka EAN (${ean.length} z 13)`,ean,"Vyžaduje overenie");
+      else if (!ean13ok(ean)) nalez(cislo,k,hl("ean"),KRIT,"Nesedí kontrolná číslica EAN-13 (GS1)",ean,"Vyžaduje overenie u dodávateľa");
+      else if (ean !== raw) nalez(cislo,k,hl("ean"),UPOZ,"EAN obsahoval medzery",JSON.stringify(raw),`Očistené na ${ean}`);
+    }
+
+    /* hmotnosti */
+    let brgew = null, ntgew = null;
+    if (m.brgew !== undefined){
+      const [v, opr] = naCislo(cit(r,"brgew")); brgew = v;
+      if (v === null) nalez(cislo,k,hl("brgew"),UPOZ,"Chýbajúca hmotnosť","(prázdne)","Ponechané prázdne");
+      else if (opr) nalez(cislo,k,hl("brgew"),UPOZ,"Hmotnosť obsahovala jednotku alebo čiarku",String(cit(r,"brgew")),`Prevedené na ${v}`);
+      if (v !== null && v < 0){ nalez(cislo,k,hl("brgew"),KRIT,"Záporná hmotnosť",String(v),"Riadok vynechaný z importu"); blok = true; }
+    }
+    if (m.ntgew !== undefined){
+      const [v] = naCislo(cit(r,"ntgew")); ntgew = v;
+      if (v !== null && brgew !== null && v > brgew)
+        nalez(cislo,k,hl("ntgew"),KRIT,"Čistá hmotnosť je vyššia než hrubá",`${v} > ${brgew}`,"Riadok vynechaný z importu"), blok = true;
+    }
+
+    /* cena a DPH */
+    let cena = null, dph = null;
+    if (m.cena !== undefined){
+      const [v, opr] = naCislo(cit(r,"cena")); cena = v;
+      if (v === null){ nalez(cislo,k,hl("cena"),KRIT,"Chýbajúca alebo nečitateľná cena",String(cit(r,"cena")),"Riadok vynechaný z importu"); blok = true; }
+      else {
+        if (opr) nalez(cislo,k,hl("cena"),UPOZ,"Cena v textovom formáte",String(cit(r,"cena")),`Prevedené na ${v.toFixed(2)}`);
+        if (v < 0){ nalez(cislo,k,hl("cena"),KRIT,"Záporná cena",v.toFixed(2),"Riadok vynechaný z importu"); blok = true; }
+        else if (v === 0){ nalez(cislo,k,hl("cena"),KRIT,"Nulová cena","0.00","Riadok vynechaný z importu"); blok = true; }
+      }
+    }
+    if (m.dph !== undefined){
+      let [v, opr] = naCislo(cit(r,"dph"));
+      if (v !== null && v > 0 && v < 1){ v = v * 100; opr = true; }
+      dph = v;
+      if (v === null){ nalez(cislo,k,hl("dph"),KRIT,"Chýbajúca sadzba DPH",String(cit(r,"dph")),"Riadok vynechaný z importu"); blok = true; }
+      else {
+        if (opr) nalez(cislo,k,hl("dph"),UPOZ,"Sadzba DPH v textovom formáte",String(cit(r,"dph")),`Prevedené na ${Math.round(v)}`);
+        if (!DPH_PLATNE.has(Math.round(v))){ nalez(cislo,k,hl("dph"),KRIT,"Neplatná sadzba DPH",String(Math.round(v)),"Riadok vynechaný z importu"); blok = true; }
+      }
+    }
+
+    /* duplicity */
+    if (k){
+      if (videneKluce.has(k)){
+        nalez(cislo,k,hl("kluc"),KRIT,"Duplicitný kľúč",k,`Duplicita riadku ${videneKluce.get(k)} — vynechané`);
+        blok = true;
+      } else videneKluce.set(k, cislo);
+    }
+    if (n){
+      const kn = klucNazvu(n);
+      if (videneNazvy.has(kn) && !blok)
+        nalez(cislo,k,hl("nazov"),UPOZ,"Takmer zhodný názov",n,`Zhoda s riadkom ${videneNazvy.get(kn)} — overiť duplicitu`);
+      else if (!videneNazvy.has(kn)) videneNazvy.set(kn, cislo);
+    }
+
+    if (!blok){
+      const out = [];
+      for (const pole of PORADIE) if (m[pole] !== undefined) out.push(hodnota(pole));
+      ciste.push(out);
+    }
+
+    function hodnota(pole){
+      switch(pole){
+        case "kluc": return k;
+        case "nazov": return n;
+        case "mj": return mj;
+        case "mtart": return mtart;
+        case "ean": return ean || null;
+        case "brgew": return brgew;
+        case "ntgew": return ntgew;
+        case "cena": return cena === null ? null : Math.round(cena*100)/100;
+        case "dph": return dph === null ? null : Math.round(dph);
+        default: {
+          const v = cit(r, pole);
+          return v === null ? null : String(v).trim();
+        }
+      }
+    }
+  }
+
+  function hl(pole){ return m[pole] === undefined ? pole : String(hlavicka[m[pole]]); }
+  const hlavickaCista = PORADIE.filter(p => m[p] !== undefined).map(p => String(hlavicka[m[p]]));
+  return { hlavickaCista, ciste, nalezy:N, poctet: riadky.length - 1, mapovane:Object.keys(m) };
+}
+const PORADIE = ["kluc","nazov","mtart","mj","matkl","ean","brgew","ntgew","gewei","werks","cena","dph","dodavatel"];
+
+/* ============================== ukážka ================================ */
+/* Každý defekt v ukážke je ZÁMERNÝ a overiteľný. Všetky ostatné EAN-y majú
+   správnu kontrolnú číslicu podľa GS1 — demo, ktoré hlási neexistujúce
+   chyby, je horšie než žiadne demo. */
+const UKAZKA = [
+["MATNR","MAKTX","MTART","MEINS","MATKL","EAN11","BRGEW","NTGEW","GEWEI","WERKS"],
+["100001","Ložisko guľkové 6204 2RS","ROH","ks","LOZ","8586001234566",0.12,0.11,"KG","1000"],
+["100002","Ložisko guľkové 6205 2RS","ROH","KS","LOZ","8586001234573",0.15,0.14,"KG","1000"],
+["100003","Tesniaci krúžok 25x35x7","ROH","ST","TES","858600123459",0.01,0.01,"KG","1000"],
+["100004","Skrutka M8x40 DIN 933 pozinkovaná oceľ trieda 8.8","ROH","ST","SPO","8586001234610","0,02 kg",0.02,"KG","1000"],
+["100005","Matica M8 DIN 934","ROH","kus","SPO","8586001234627",0.008,0.008,"KG","1000"],
+["100002","Ložisko guľkové 6205 2RS","ROH","ST","LOZ","8586001234573",0.15,0.14,"KG","1000"],
+["100006","Hriadeľ prevodový","HALB","ST","MEC","8586001234634",2.4,2.9,"KG","1000"],
+["100007","Remenica 120 mm","HALB","ST","MEC","8586001234641",1.8,1.7,"KG","1000"],
+["100008","Olej prevodový SAE 80W-90","HAWA","L","PRO","8586001234658",0.9,0.9,"KG","1000"],
+["100009","Filter vzduchový","HAWA","ST","FIL","8586001234999",0.3,0.28,"KG","1000"],
+["100010","Remenica 120mm","HALB","ST","MEC","8586001234665",1.8,1.7,"KG","1000"],
+["100011","Servis prevodovky","XYZ","ST","SLU","",null,null,"","1000"],
+["100012","Kryt prevodovky","FERT","ST","MEC","8586001234672",3.1,3.0,"KG","1000"],
+["","Podložka M8 DIN 125","ROH","ST","SPO","8586001234689",0.002,0.002,"KG","1000"],
+["100014","Ložisko valčekové NU 205","ROH","ST","LOZ","8586 001234696",0.21,0.2,"KG","1000"],
+];
+
+/* =============================== UI =================================== */
+const $ = s => document.querySelector(s);
+let posledne = null;
+
+function ukazChybu(t){ const e = $("#chyba"); e.textContent = t; e.hidden = false; $("#vysledok").hidden = true; }
+
+function vykresli(v){
+  posledne = v;
+  $("#chyba").hidden = true;
+  const krit = v.nalezy.filter(n => n.zav === KRIT).length;
+  const upoz = v.nalezy.length - krit;
+
+  $("#stats").innerHTML = [
+    ["Riadkov na vstupe", v.poctet, ""],
+    ["Prejde do importu", v.ciste.length, "g"],
+    ["Nálezov spolu", v.nalezy.length, ""],
+    ["Kritických", krit, "c"],
+    ["Upozornení", upoz, "w"],
+  ].map(([k, val, cls]) =>
+    `<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${val}</div></div>`).join("");
+
+  $("#pocetNalezov").textContent =
+    v.nalezy.length ? `${v.nalezy.length} nálezov · ${krit} kritických` : "bez nálezov";
+
+  const tb = $("#tabNalezy tbody");
+  if (!v.nalezy.length){
+    tb.innerHTML = `<tr><td colspan="7" class="empty">Žiadne nálezy — dáta sú v poriadku.</td></tr>`;
+  } else {
+    const zoradene = [...v.nalezy].sort((a,b) =>
+      (a.zav === b.zav ? a.riadok - b.riadok : (a.zav === KRIT ? -1 : 1)));
+    tb.innerHTML = zoradene.map(n => `<tr class="${n.zav === KRIT ? "k" : "u"}">
+      <td><span class="sev ${n.zav === KRIT ? "k" : "u"}">${n.zav}</span></td>
+      <td class="num mono">${n.riadok}</td>
+      <td class="mono">${esc(n.kluc || "—")}</td>
+      <td>${esc(n.pole)}</td>
+      <td>${esc(n.typ)}</td>
+      <td class="mono">${esc(n.pov ?? "")}</td>
+      <td>${esc(n.akcia)}</td></tr>`).join("");
+  }
+  $("#vysledok").hidden = false;
+}
+
+function stiahni(blob, meno){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = meno;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+async function spracujSubor(f){
+  try{
+    const ab = await f.arrayBuffer();
+    vykresli(skontroluj(await citajXlsx(ab)));
+  } catch(e){ ukazChybu("Nepodarilo sa spracovať súbor: " + e.message); }
+}
+
+$("#pick").addEventListener("click", () => $("#file").click());
+$("#file").addEventListener("change", e => { if (e.target.files[0]) spracujSubor(e.target.files[0]); });
+$("#demo").addEventListener("click", () => {
+  try { vykresli(skontroluj(UKAZKA.map(r => r.slice()))); }
+  catch(e){ ukazChybu(e.message); }
+});
+const drop = $("#drop");
+drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#file").click(); }});
+["dragenter","dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("hot"); }));
+["dragleave","drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("hot"); }));
+drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) spracujSubor(f); });
+
+$("#stiahniCiste").addEventListener("click", () => {
+  if (!posledne) return;
+  stiahni(urobXlsx(posledne.hlavickaCista, posledne.ciste), "cisty_import.xlsx");
+});
+$("#stiahniProtokol").addEventListener("click", () => {
+  if (!posledne) return;
+  const h = ["Závažnosť","Riadok","Kľúč","Pole","Zistenie","Pôvodná hodnota","Vykonaná akcia"];
+  const r = posledne.nalezy.map(n => [n.zav, n.riadok, n.kluc, n.pole, n.typ, String(n.pov ?? ""), n.akcia]);
+  stiahni(urobXlsx(h, r), "protokol_nalezov.xlsx");
+});
+
+/* otvor sa v pracovnom stave */
+vykresli(skontroluj(UKAZKA.map(r => r.slice())));
+</script>
+</body>
+</html>
